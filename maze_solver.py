@@ -1,6 +1,12 @@
 import argparse
 import logging
 
+# For python 2 and 3 compatibility
+try:
+    import queue
+except ImportError:
+    import Queue as queue
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -11,25 +17,32 @@ class MazeSolver():
         self.fname = fname
         self.runmode = runmode
         self.maze = []
+        self.maze_flags = []
         self.start = None
         self.dest = None
         try:
             with open(fname) as f:
-                for line in f:
-                    print(line)
+                for idx, line in enumerate(f):
                     self.maze.append(line)
+                    self.maze_flags.append([])
 
-                    if not self.start:
-                        start_index = line.find('P')
-                        if start_index != -1:
-                            self.start = (len(self.maze) - 1, start_index)
+                    for cnt, char in enumerate(line):
+                        if char == '%':
+                            self.maze_flags[idx].append('wall')
+                        elif char == ' ':
+                            self.maze_flags[idx].append('unmarked')
+                        elif char == 'P':
+                            self.maze_flags[idx].append('start')
+                            self.start = (idx, cnt)
+                        elif char == '.':
+                            self.maze_flags[idx].append('dest')
+                            self.dest = (idx, cnt)
 
-                    if not self.dest:
-                        dest_index = line.find('.')
-                        if dest_index != -1:
-                            self.dest = (len(self.maze) - 1, dest_index)
-        except:
-            pass
+        except Exception as e:
+            print(e)
+
+    def __get_val(self, array, coords):
+        return array[coords[0]][coords[1]]
 
     def __write_sol(self, solved_maze, fname):
         try:
@@ -39,8 +52,57 @@ class MazeSolver():
         except:
             pass
 
+    def __dfs(self, row, col, maze, maze_flags):
+        try:
+            if maze_flags[row][col] == 'wall':
+                return False
+        except IndexError:
+            return False
+
+        if maze_flags[row][col] == 'marked':
+            return False
+
+        if maze_flags[row][col] == 'dest':
+            return True
+
+        up = (row - 1, col)
+        down = (row + 1, col)
+        left = (row, col - 1)
+        right = (row, col + 1)
+
+        maze_flags[row][col] = 'marked'
+        if (row, col) != self.start:
+            list_maze_row = list(maze[row])
+            list_maze_row[col] = '.'
+            maze[row] = ''.join(list_maze_row)
+
+        if self.__dfs(up[0], up[1], maze, maze_flags):
+            return True
+        if self.__dfs(down[0], down[1], maze, maze_flags):
+            return True
+        if self.__dfs(left[0], left[1], maze, maze_flags):
+            return True
+        if self.__dfs(right[0], right[1], maze, maze_flags):
+            return True
+
+
+        if (row, col) != self.start:
+            list_maze_row = list(maze[row])
+            list_maze_row[col] = ' '
+            maze[row] = ''.join(list_maze_row)
+        return False
+
+
     def _dfs(self):
         logger.info('Running depth-first search on maze')
+
+        maze = self.maze
+        maze_flags = self.maze_flags
+        self.__dfs(self.start[0], self.start[1], maze, maze_flags)
+        self.print_maze(maze)
+        logger.info('{0} nodes visited'.format(sum(x.count('marked') for x in
+                    maze_flags)))
+
 
     def _bfs(self):
         logger.info('Running breadth-first search on maze')
@@ -70,7 +132,7 @@ class MazeSolver():
 
     def print_maze(self, solved_maze):
         for line in solved_maze:
-            print(line[:-1])
+            print(line.strip('\n'))
 
 
 def main():
