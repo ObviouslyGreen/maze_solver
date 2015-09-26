@@ -76,13 +76,10 @@ class MazeSolver():
             list_maze_row[col] = '.'
             maze[row] = ''.join(list_maze_row)
 
-        if self.__dfs(up[0], up[1], maze, maze_flags):
-            return True
-        if self.__dfs(down[0], down[1], maze, maze_flags):
-            return True
-        if self.__dfs(left[0], left[1], maze, maze_flags):
-            return True
-        if self.__dfs(right[0], right[1], maze, maze_flags):
+        if (self.__dfs(up[0], up[1], maze, maze_flags) or
+            self.__dfs(down[0], down[1], maze, maze_flags) or
+            self.__dfs(left[0], left[1], maze, maze_flags) or
+            self.__dfs(right[0], right[1], maze, maze_flags)):
             return True
 
 
