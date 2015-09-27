@@ -146,19 +146,19 @@ class MazeSolver():
 
             if(maze_flags[r-1][c]['type'] == 'unmarked' or maze_flags[r-1][c]['type'] == 'dest'):
                 if(maze_flags[r-1][c]['type'] != 'dest'): maze_flags[r-1][c]['type'] = 'marked'
-                pq.put((self.__manhat_dist(r-1,c,self.dest[0],self.dest[1]),path + [(r-1,c)],r-1,c))
+                pq.put((self.__manhat_dist(r-1,c),path + [(r-1,c)],r-1,c))
 
             if(maze_flags[r+1][c]['type'] == 'unmarked' or maze_flags[r+1][c]['type'] == 'dest'):
                 if(maze_flags[r+1][c]['type'] != 'dest'):maze_flags[r+1][c]['type'] = 'marked'
-                pq.put((self.__manhat_dist(r+1,c,self.dest[0],self.dest[1]),path + [(r+1,c)],r+1,c))
+                pq.put((self.__manhat_dist(r+1,c),path + [(r+1,c)],r+1,c))
 
             if(maze_flags[r][c-1]['type'] == 'unmarked' or maze_flags[r][c-1]['type'] == 'dest'):
                 if(maze_flags[r][c-1]['type'] != 'dest'):maze_flags[r][c-1]['type'] = 'marked'
-                pq.put((self.__manhat_dist(r,c-1,self.dest[0],self.dest[1]),path + [(r,c-1)],r,c-1))
+                pq.put((self.__manhat_dist(r,c-1),path + [(r,c-1)],r,c-1))
 
             if(maze_flags[r][c+1]['type'] == 'unmarked' or maze_flags[r][c+1]['type'] == 'dest'):
                 if(maze_flags[r][c+1]['type'] != 'dest'):maze_flags[r][c+1]['type'] = 'marked'
-                pq.put((self.__manhat_dist(r,c+1,self.dest[0],self.dest[1]),path + [(r,c+1)],r,c+1))
+                pq.put((self.__manhat_dist(r,c+1),path + [(r,c+1)],r,c+1))
 
         for item in pathsol:
             list_maze_row = list(maze[item[0]])
