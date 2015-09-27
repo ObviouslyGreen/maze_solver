@@ -203,6 +203,7 @@ class MazeSolver():
         q.put((self._manhat_dist(row, col, dest[0], dest[1]), 0, 'E', [], row, col))
         maze_flags[row][col]['type'] = 'marked'
         pathsol = []
+        
         while(q.empty() == False):
             _, cost, direction, path, r, c = q.get()
             if(maze_flags[r][c]['type'] == 'dest'):
