@@ -20,6 +20,8 @@ class MazeSolver():
         self.maze_flags = []
         self.start = None
         self.dest = None
+        self.ghoststart = None
+        self.ghost = []
         try:
             with open(fname) as f:
                 for idx, line in enumerate(f):
@@ -37,6 +39,11 @@ class MazeSolver():
                         elif char == '.':
                             self.maze_flags[idx].append({'type': 'dest', 'N': False, 'E': False, 'S': False, 'W': False})
                             self.dest = (idx, cnt)
+                        elif char == 'G'
+                            self.ghoststart = (idx,cnt)
+                            self.ghost[].append('ghost')
+                        elif char == 'g'
+                            self.ghost[].append('ghost')
 
         except Exception as e:
             print(e)
@@ -203,7 +210,7 @@ class MazeSolver():
         q.put((self._manhat_dist(row, col, dest[0], dest[1]), 0, 'E', [], row, col))
         maze_flags[row][col]['type'] = 'marked'
         pathsol = []
-        
+
         while(q.empty() == False):
             _, cost, direction, path, r, c = q.get()
             if(maze_flags[r][c]['type'] == 'dest'):
@@ -250,6 +257,34 @@ class MazeSolver():
 
         return cost
 
+    def __a_ghost(self, row, col, maze, maze_flags):
+        q = queue.PriorityQueue()
+
+        dest = self.dest
+        q.put((self._manhat_dist(row, col, dest[0], dest[1]), 0, [], row, col))
+        maze_flags[row][col]['type'] = 'marked'
+        pathsol = []
+        while(q.empty() == False):
+            _, cost, path, r, c = q.get()
+            if(maze_flags[r][c]['type'] == 'dest'):
+                pathsol = path
+                break
+
+            if(maze_flags[r-1][c]['type'] == 'unmarked' or maze_flags[r-1][c]['type'] == 'dest'):
+                if(maze_flags[r-1][c]['type'] != 'dest'): maze_flags[r-1][c]['type'] = 'marked'
+                q.put((cost + self._manhat_dist(r-1, c, dest[0], dest[1]), cost + 1, path + [(r-1,c)],r-1,c))
+            if(maze_flags[r+1][c]['type'] == 'unmarked' or maze_flags[r+1][c]['type'] == 'dest'):
+                if(maze_flags[r+1][c]['type'] != 'dest'):maze_flags[r+1][c]['type'] = 'marked'
+                q.put((cost + self._manhat_dist(r+1, c, dest[0], dest[1]), cost + 1, path + [(r+1,c)],r+1,c))
+            if(maze_flags[r][c-1]['type'] == 'unmarked' or maze_flags[r][c-1]['type'] == 'dest'):
+                if(maze_flags[r][c-1]['type'] != 'dest'):maze_flags[r][c-1]['type'] = 'marked'
+                q.put((cost + self._manhat_dist(r, c-1, dest[0], dest[1]), cost + 1, path + [(r,c-1)],r,c-1))
+            if(maze_flags[r][c+1]['type'] == 'unmarked' or maze_flags[r][c+1]['type'] == 'dest'):
+                if(maze_flags[r][c+1]['type'] != 'dest'):maze_flags[r][c+1]['type'] = 'marked'
+                q.put((cost + self._manhat_dist(r, c-1, dest[0], dest[1]), cost + 1, path + [(r,c+1)], r,c+1))
+
+        return pathsol #ghost things
+        
     def _dfs(self):
         logger.info('Running depth-first search on maze')
 
