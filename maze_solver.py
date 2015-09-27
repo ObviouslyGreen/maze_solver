@@ -39,11 +39,11 @@ class MazeSolver():
                         elif char == '.':
                             self.maze_flags[idx].append({'type': 'dest', 'N': False, 'E': False, 'S': False, 'W': False})
                             self.dest = (idx, cnt)
-                        elif char == 'G'
+                        elif char == 'G':
                             self.ghoststart = (idx,cnt)
-                            self.ghost[].append('ghost')
-                        elif char == 'g'
-                            self.ghost[].append('ghost')
+                            self.ghost.append('ghost')
+                        elif char == 'g':
+                            self.ghost.append('ghost')
 
         except Exception as e:
             print(e)
