@@ -123,6 +123,41 @@ class MazeSolver():
             list_maze_row[item[1]] = '.'
             maze[item[0]] = ''.join(list_maze_row)
 
+    def __greedy(self, row, col, maze, maze_flags):
+        pq = queue.PriorityQueue()
+
+        dest = self.dest
+        pq.put((self._manhat_dist(row, col, dest[0], dest[1]),[],row,col))
+        maze_flags[row][col] = 'marked'
+        pathsol = []
+
+        while(pq.empty() == False):
+            _, path, r, c = pq.get()
+            if(maze_flags[r][c] == 'dest'):
+                pathsol = path
+                break
+
+            if(maze_flags[r-1][c] == 'unmarked' or maze_flags[r-1][c] == 'dest'):
+                if(maze_flags[r-1][c] != 'dest'): maze_flags[r-1][c] = 'marked'
+                pq.put((self._manhat_dist(r-1,c,self.dest[0],self.dest[1]),path + [(r-1,c)],r-1,c))
+
+            if(maze_flags[r+1][c] == 'unmarked' or maze_flags[r+1][c] == 'dest'):
+                if(maze_flags[r+1][c] != 'dest'):maze_flags[r+1][c] = 'marked'
+                pq.put((self._manhat_dist(r+1,c,self.dest[0],self.dest[1]),path + [(r+1,c)],r+1,c))
+
+            if(maze_flags[r][c-1] == 'unmarked' or maze_flags[r][c-1] == 'dest'):
+                if(maze_flags[r][c-1] != 'dest'):maze_flags[r][c-1] = 'marked'
+                pq.put((self._manhat_dist(r,c-1,self.dest[0],self.dest[1]),path + [(r,c-1)],r,c-1))
+
+            if(maze_flags[r][c+1] == 'unmarked' or maze_flags[r][c+1] == 'dest'):
+                if(maze_flags[r][c+1] != 'dest'):maze_flags[r][c+1] = 'marked'
+                pq.put((self._manhat_dist(r,c+1,self.dest[0],self.dest[1]),path + [(r,c+1)],r,c+1))
+
+        for item in pathsol:
+            list_maze_row = list(maze[item[0]])
+            list_maze_row[item[1]] = '.'
+            maze[item[0]] = ''.join(list_maze_row)
+
     def __a_search(self, row, col, maze, maze_flags):
         q = queue.PriorityQueue()
 
@@ -153,7 +188,6 @@ class MazeSolver():
             list_maze_row = list(maze[item[0]])
             list_maze_row[item[1]] = '.'
             maze[item[0]] = ''.join(list_maze_row)
-            ++cost
 
     def _dfs(self):
         logger.info('Running depth-first search on maze')
@@ -183,6 +217,15 @@ class MazeSolver():
     def _greedy(self):
         logger.info('Running greedy best-first search on maze')
 
+        maze = self.maze
+        maze_flags = self.maze_flags
+        self.__greedy(self.start[0], self.start[1], maze, maze_flags)
+        self.print_maze(maze)
+        logger.info('{0} nodes visited'.format(sum(x.count('marked') for x in
+                    maze_flags)))
+        logger.info('cost: {0}'.format(sum(x.count('.') for x in
+                    maze)))
+
     def _a_search(self):
         logger.info('Running A* search on maze')
 
@@ -194,6 +237,7 @@ class MazeSolver():
                     maze_flags)))
         logger.info('cost: {0}'.format(sum(x.count('.') for x in
                     maze)))
+
     def solve(self):
         if self.runmode == 'dfs':
             self._dfs()
