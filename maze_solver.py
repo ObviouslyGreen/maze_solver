@@ -41,9 +41,11 @@ class MazeSolver():
                             self.dest = (idx, cnt)
                         elif char == 'G':
                             self.ghoststart = (idx,cnt)
-                            self.ghost.append('ghost')
+                            self.maze_flags[idx].append({'type': 'ghost', 'N': False, 'E': False, 'S': False, 'W': False})
+                            self.maze_flags[idx].append({'type': 'unmarked', 'N': False, 'E': False, 'S': False, 'W': False})
                         elif char == 'g':
-                            self.ghost.append('ghost')
+                            self.maze_flags[idx].append({'type': 'ghost', 'N': False, 'E': False, 'S': False, 'W': False})
+                            self.maze_flags[idx].append({'type': 'unmarked', 'N': False, 'E': False, 'S': False, 'W': False})
 
         except Exception as e:
             print(e)
@@ -270,21 +272,26 @@ class MazeSolver():
                 pathsol = path
                 break
 
-            if(maze_flags[r-1][c]['type'] == 'unmarked' or maze_flags[r-1][c]['type'] == 'dest'):
+            if(maze_flags[r-1][c]['type'] == 'ghost' or maze_flags[r-1][c]['type'] == 'unmarked' or maze_flags[r-1][c]['type'] == 'dest'):
                 if(maze_flags[r-1][c]['type'] != 'dest'): maze_flags[r-1][c]['type'] = 'marked'
                 q.put((cost + self._manhat_dist(r-1, c, dest[0], dest[1]), cost + 1, path + [(r-1,c)],r-1,c))
-            if(maze_flags[r+1][c]['type'] == 'unmarked' or maze_flags[r+1][c]['type'] == 'dest'):
+            if(maze_flags[r+1][c]['type'] == 'ghost' or maze_flags[r+1][c]['type'] == 'unmarked' or maze_flags[r+1][c]['type'] == 'dest'):
                 if(maze_flags[r+1][c]['type'] != 'dest'):maze_flags[r+1][c]['type'] = 'marked'
                 q.put((cost + self._manhat_dist(r+1, c, dest[0], dest[1]), cost + 1, path + [(r+1,c)],r+1,c))
-            if(maze_flags[r][c-1]['type'] == 'unmarked' or maze_flags[r][c-1]['type'] == 'dest'):
+            if(maze_flags[r][c-1]['type'] == 'ghost' or maze_flags[r][c-1]['type'] == 'unmarked' or maze_flags[r][c-1]['type'] == 'dest'):
                 if(maze_flags[r][c-1]['type'] != 'dest'):maze_flags[r][c-1]['type'] = 'marked'
                 q.put((cost + self._manhat_dist(r, c-1, dest[0], dest[1]), cost + 1, path + [(r,c-1)],r,c-1))
-            if(maze_flags[r][c+1]['type'] == 'unmarked' or maze_flags[r][c+1]['type'] == 'dest'):
+            if(maze_flags[r][c+1]['type'] == 'ghost' or maze_flags[r][c+1]['type'] == 'unmarked' or maze_flags[r][c+1]['type'] == 'dest'):
                 if(maze_flags[r][c+1]['type'] != 'dest'):maze_flags[r][c+1]['type'] = 'marked'
                 q.put((cost + self._manhat_dist(r, c-1, dest[0], dest[1]), cost + 1, path + [(r,c+1)], r,c+1))
 
+        for item in pathsol:
+            list_maze_row = list(maze[item[0]])
+            list_maze_row[item[1]] = '.'
+            maze[item[0]] = ''.join(list_maze_row)
+
         return pathsol #ghost things
-        
+
     def _dfs(self):
         logger.info('Running depth-first search on maze')
 
@@ -365,6 +372,70 @@ class MazeSolver():
         logger.info('{0} nodes visited'.format(num_nodes))
         logger.info('cost: {0}'.format(cost))
 
+
+    def _a_ghost(self):
+        logger.info('Running A*ghost search on maze')
+        maze = self.maze
+        maze_flags = self.maze_flags
+        num_nodes = 0
+        path = self.__a_ghost(self.start[0], self.start[1], maze, maze_flags)
+
+        for row in maze_flags:
+            for col in row:
+                if (col['type'] == 'marked' or col['type'] == 'ghost'):
+                    num_nodes += 1
+        currloc = (self.start[0],self.start[1])
+        ghostrow = self.ghoststart[0]
+        ghostcol = self.ghoststart[1]
+        total_moves = 0
+        ghostdirection = 'r'
+        steps = -1
+        logger.info('start = {0}'.format((self.start[0], self.start[1])))
+        logger.info('step = {0}'.format(steps))
+        logger.info('location = {0}'.format(path[steps]))
+        logger.info('ghost location = {0}\n'.format((ghostrow,ghostcol)))
+        # loops always takes the a* path and will not look for any other path
+        while (currloc != (self.dest[0],self.dest[1])):
+            total_moves +=  1
+            steps += 1
+            nextloc = path[steps]
+            # move ghost
+            if (ghostdirection == 'r'):
+                if (maze_flags[ghostrow][ghostcol+1]['type'] == 'wall'):
+                    ghostdirection = 'l'
+                    prevghost = (ghostrow,ghostcol)
+                    ghostcol -= 1
+                else:
+                    prevghost = (ghostrow,ghostcol)
+                    ghostcol += 1
+            else:
+                if (maze_flags[ghostrow][ghostcol-1]['type'] == 'wall'):
+                    ghostdirection = 'r'
+                    prevghost = (ghostrow,ghostcol)
+                    ghostcol += 1
+                else:
+                    prevghost = (ghostrow,ghostcol)
+                    ghostcol -= 1
+
+            logger.info('step = {0}'.format(steps))
+            logger.info('location = {0}'.format(path[steps]))
+            logger.info('ghost location = {0}\n'.format((ghostrow,ghostcol)))
+            # check if move pacman backwards or forwards based on ghost's new location
+            if (nextloc == (ghostrow,ghostcol) or (nextloc == prevghost and currloc == (ghostrow,ghostcol))):
+                steps = steps - 2
+                if (steps < 0):
+                    #move backwards from start implement later
+                    currloc = (self.start[0],self.start[1])
+                else:
+                    currloc = path[steps]
+            else:
+                currloc = nextloc
+
+        self.print_maze(maze)
+        logger.info('{0} nodes visited'.format(num_nodes))
+        logger.info('smallest moves = {0}'.format(steps))
+        logger.info('total_moves = {0}'.format(total_moves))
+
     def solve(self):
         if self.runmode == 'dfs':
             self._dfs()
@@ -378,6 +449,8 @@ class MazeSolver():
             self._penalized_a_search(1)
         elif self.runmode == 'a*1.2.2':
             self._penalized_a_search(2)
+        elif self.runmode == 'a*ghost':
+            self._a_ghost()
         elif self.runmode == 'all':
             self._dfs()
             self._bfs()
