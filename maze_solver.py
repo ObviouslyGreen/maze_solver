@@ -52,6 +52,10 @@ class MazeSolver():
         except:
             pass
 
+    def _manhat_dist(self, row, col, destrow, destcol):
+        dist = abs(destrow - row) + abs(destcol - col)
+        return dist
+
     def __dfs(self, row, col, maze, maze_flags):
         try:
             if maze_flags[row][col] == 'wall':
@@ -100,10 +104,6 @@ class MazeSolver():
             if(maze_flags[r][c] == 'dest'):
                 pathsol = path
                 break
-            up = (r-1, c)
-            down = (r+1,c)
-            left = (r,c-1)
-            right =(r,c+1)
 
             if(maze_flags[r-1][c] == 'unmarked' or maze_flags[r-1][c] == 'dest'):
                 if(maze_flags[r-1][c] != 'dest'): maze_flags[r-1][c] = 'marked'
@@ -123,7 +123,37 @@ class MazeSolver():
             list_maze_row[item[1]] = '.'
             maze[item[0]] = ''.join(list_maze_row)
 
+    def __a_search(self, row, col, maze, maze_flags):
+        q = queue.PriorityQueue()
 
+        dest = self.dest
+        q.put((self._manhat_dist(row, col, dest[0], dest[1]), 0, [], row, col))
+        maze_flags[row][col] = 'marked'
+        pathsol = []
+        while(q.empty() == False):
+            _, cost, path, r, c = q.get()
+            if(maze_flags[r][c] == 'dest'):
+                pathsol = path
+                break
+
+            if(maze_flags[r-1][c] == 'unmarked' or maze_flags[r-1][c] == 'dest'):
+                if(maze_flags[r-1][c] != 'dest'): maze_flags[r-1][c] = 'marked'
+                q.put((cost + self._manhat_dist(r-1, c, dest[0], dest[1]), cost + 1, path + [(r-1,c)],r-1,c))
+            if(maze_flags[r+1][c] == 'unmarked' or maze_flags[r+1][c] == 'dest'):
+                if(maze_flags[r+1][c] != 'dest'):maze_flags[r+1][c] = 'marked'
+                q.put((cost + self._manhat_dist(r+1, c, dest[0], dest[1]), cost + 1, path + [(r+1,c)],r+1,c))
+            if(maze_flags[r][c-1] == 'unmarked' or maze_flags[r][c-1] == 'dest'):
+                if(maze_flags[r][c-1] != 'dest'):maze_flags[r][c-1] = 'marked'
+                q.put((cost + self._manhat_dist(r, c-1, dest[0], dest[1]), cost + 1, path + [(r,c-1)],r,c-1))
+            if(maze_flags[r][c+1] == 'unmarked' or maze_flags[r][c+1] == 'dest'):
+                if(maze_flags[r][c+1] != 'dest'):maze_flags[r][c+1] = 'marked'
+                q.put((cost + self._manhat_dist(r, c-1, dest[0], dest[1]), cost + 1, path + [(r,c+1)], r,c+1))
+
+        for item in pathsol:
+            list_maze_row = list(maze[item[0]])
+            list_maze_row[item[1]] = '.'
+            maze[item[0]] = ''.join(list_maze_row)
+            ++cost
 
     def _dfs(self):
         logger.info('Running depth-first search on maze')
@@ -134,6 +164,8 @@ class MazeSolver():
         self.print_maze(maze)
         logger.info('{0} nodes visited'.format(sum(x.count('marked') for x in
                     maze_flags)))
+        logger.info('cost: {0}'.format(sum(x.count('.') for x in
+                    maze)))
 
 
     def _bfs(self):
@@ -145,6 +177,8 @@ class MazeSolver():
         self.print_maze(maze)
         logger.info('{0} nodes visited'.format(sum(x.count('marked') for x in
                     maze_flags)))
+        logger.info('cost: {0}'.format(sum(x.count('.') for x in
+                    maze)))
 
     def _greedy(self):
         logger.info('Running greedy best-first search on maze')
@@ -152,6 +186,14 @@ class MazeSolver():
     def _a_search(self):
         logger.info('Running A* search on maze')
 
+        maze = self.maze
+        maze_flags = self.maze_flags
+        self.__a_search(self.start[0], self.start[1], maze, maze_flags)
+        self.print_maze(maze)
+        logger.info('{0} nodes visited'.format(sum(x.count('marked') for x in
+                    maze_flags)))
+        logger.info('cost: {0}'.format(sum(x.count('.') for x in
+                    maze)))
     def solve(self):
         if self.runmode == 'dfs':
             self._dfs()
