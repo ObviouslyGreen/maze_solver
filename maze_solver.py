@@ -1,4 +1,5 @@
 import argparse
+import copy
 import logging
 import math
 
@@ -294,8 +295,8 @@ class MazeSolver():
     def _dfs(self):
         logger.info('Running depth-first search on maze')
 
-        maze = self.maze
-        maze_flags = self.maze_flags
+        maze = copy.deepcopy(self.maze)
+        maze_flags = copy.deepcopy(self.maze_flags)
         self.__dfs(self.start[0], self.start[1], maze, maze_flags)
         self.print_maze(maze)
         num_nodes = 0
@@ -311,8 +312,8 @@ class MazeSolver():
     def _bfs(self):
         logger.info('Running breadth-first search on maze')
 
-        maze = self.maze
-        maze_flags = self.maze_flags
+        maze = copy.deepcopy(self.maze)
+        maze_flags = copy.deepcopy(self.maze_flags)
         self.__bfs(self.start[0], self.start[1], maze, maze_flags)
         self.print_maze(maze)
         num_nodes = 0
@@ -327,8 +328,8 @@ class MazeSolver():
     def _greedy(self):
         logger.info('Running greedy best-first search on maze')
 
-        maze = self.maze
-        maze_flags = self.maze_flags
+        maze = copy.deepcopy(self.maze)
+        maze_flags = copy.deepcopy(self.maze_flags)
         self.__greedy(self.start[0], self.start[1], maze, maze_flags)
         self.print_maze(maze)
         num_nodes = 0
@@ -343,8 +344,8 @@ class MazeSolver():
     def _a_search(self):
         logger.info('Running A* search on maze')
 
-        maze = self.maze
-        maze_flags = self.maze_flags
+        maze = copy.deepcopy(self.maze)
+        maze_flags = copy.deepcopy(self.maze_flags)
         self.__a_search(self.start[0], self.start[1], maze, maze_flags)
         self.print_maze(maze)
         num_nodes = 0
@@ -359,8 +360,8 @@ class MazeSolver():
     def _penalized_a_search(self, case):
         logger.info('Running A* search on maze')
 
-        maze = self.maze
-        maze_flags = self.maze_flags
+        maze = copy.deepcopy(self.maze)
+        maze_flags = copy.deepcopy(self.maze_flags)
         cost = self.__penalized_a_search(self.start[0], self.start[1], maze, case, maze_flags)
         self.print_maze(maze)
         num_nodes = 0
