@@ -3,11 +3,14 @@ import copy
 import logging
 import math
 
+from PIL import Image
+
 # For python 2 and 3 compatibility
 try:
     import queue
 except ImportError:
     import Queue as queue
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -43,12 +46,9 @@ class MazeSolver():
                             self.dest = (idx, cnt)
                         elif char == 'G':
                             self.ghoststart = (idx,cnt)
-                            self.maze_flags[idx].append({'type': 'ghost', 'N': False, 'E': False, 'S': False, 'W': False})
                             self.maze_flags[idx].append({'type': 'unmarked', 'N': False, 'E': False, 'S': False, 'W': False})
                         elif char == 'g':
-                            self.maze_flags[idx].append({'type': 'ghost', 'N': False, 'E': False, 'S': False, 'W': False})
                             self.maze_flags[idx].append({'type': 'unmarked', 'N': False, 'E': False, 'S': False, 'W': False})
-
 
         except Exception as e:
             print(e)
@@ -382,8 +382,8 @@ class MazeSolver():
 
     def _a_ghost(self):
         logger.info('Running A*ghost search on maze')
-        maze = self.maze
-        maze_flags = self.maze_flags
+        maze = copy.deepcopy(self.maze)
+        maze_flags = copy.deepcopy(self.maze_flags)
         num_nodes = 0
         path = self.__a_ghost(self.start[0], self.start[1], maze, maze_flags)
 
@@ -443,6 +443,104 @@ class MazeSolver():
         logger.info('smallest moves = {0}'.format(steps))
         logger.info('total_moves = {0}'.format(total_moves))
 
+    def _a_ghost_mov(self):
+        logger.info('Running A*ghost search on maze and create a gif')
+        maze = self.maze
+        maze_flags = self.maze_flags
+        num_nodes = 0
+
+        path = self.__a_ghost(self.start[0], self.start[1], maze, maze_flags)
+
+        for row in maze_flags:
+            for col in row:
+                if (col['type'] == 'marked' or col['type'] == 'ghost'):
+                    num_nodes += 1
+        currloc = (self.start[0], self.start[1])
+        ghostrow = self.ghoststart[0]
+        ghostcol = self.ghoststart[1]
+        total_moves = 0
+        ghostdirection = 'r'
+        steps = -1
+
+        frames = []
+        frame_height = (len(self.maze)) * 25
+        # minus one for newline
+        frame_width = (len(self.maze[0]) - 1) * 25
+        frame_size = (frame_width, frame_height)
+        pacman = Image.open('./res/icons/pacman.png')
+        wall = Image.open('./res/icons/wall.png')
+        ghost = Image.open('./res/icons/ghost.png')
+        star = Image.open('./res/icons/star.png')
+
+        curr_frame = Image.new('RGBA', frame_size)
+        for y, row in enumerate(self.maze):
+            for x, char in enumerate(self.maze[y]):
+                curr_coord = (x * 25, y * 25)
+                if char == '%':
+                    curr_frame.paste(wall, curr_coord)
+                elif y == currloc[0] and x == currloc[1]:
+                    curr_frame.paste(pacman, curr_coord)
+                elif y == ghostrow and x == ghostcol:
+                    curr_frame.paste(ghost, curr_coord)
+                elif y == self.dest[0] and x == self.dest[1]:
+                    curr_frame.paste(star, curr_coord)
+        frames.append(curr_frame)
+
+        # loops always takes the a* path and will not look for any other path
+        while (currloc != (self.dest[0],self.dest[1])):
+            total_moves +=  1
+            steps += 1
+            nextloc = path[steps]
+            # move ghost
+            if (ghostdirection == 'r'):
+                if (maze_flags[ghostrow][ghostcol+1]['type'] == 'wall'):
+                    ghostdirection = 'l'
+                    prevghost = (ghostrow,ghostcol)
+                    ghostcol -= 1
+                else:
+                    prevghost = (ghostrow,ghostcol)
+                    ghostcol += 1
+            else:
+                if (maze_flags[ghostrow][ghostcol-1]['type'] == 'wall'):
+                    ghostdirection = 'r'
+                    prevghost = (ghostrow,ghostcol)
+                    ghostcol += 1
+                else:
+                    prevghost = (ghostrow,ghostcol)
+                    ghostcol -= 1
+
+            # check if move pacman backwards or forwards based
+            # on ghost's new location
+            if (nextloc == (ghostrow,ghostcol)
+                or (nextloc == prevghost and currloc == (ghostrow,ghostcol))):
+                steps = steps - 2
+                if (steps < 0):
+                    #move backwards from start implement later
+                    currloc = (self.start[0],self.start[1])
+                else:
+                    currloc = path[steps]
+            else:
+                currloc = nextloc
+
+            curr_frame = Image.new('RGB', frame_size)
+            for y, row in enumerate(self.maze):
+                for x, char in enumerate(self.maze[y]):
+                    curr_coord = (x * 25, y * 25)
+                    if char == '%':
+                        curr_frame.paste(wall, curr_coord)
+                    elif y == currloc[0] and x == currloc[1]:
+                        curr_frame.paste(pacman, curr_coord)
+                    elif y == ghostrow and x == ghostcol:
+                        print(curr_coord)
+                        curr_frame.paste(ghost, curr_coord)
+                    elif y == self.dest[0] and x == self.dest[1]:
+                        curr_frame.paste(star, curr_coord)
+            frames.append(curr_frame)
+
+        sol_fname = './res/solutions/' + self.fname[:-4] + 'Sol'
+        for idx, img in enumerate(frames):
+            img.save('{0}{1}.png'.format(sol_fname, idx))
+
     def solve(self):
         if self.runmode == 'dfs':
             self._dfs()
@@ -462,6 +560,8 @@ class MazeSolver():
             self._penalized_a_search(3)
         elif self.runmode == 'a*ghost':
             self._a_ghost()
+        elif self.runmode == 'a*ghost_mov':
+            self._a_ghost_mov()
         elif self.runmode == 'all':
             self._dfs()
             self._bfs()
@@ -482,8 +582,9 @@ def main():
     parser.add_argument('fname', help='Input maze')
     parser.add_argument('runmode', help='''Determine which algorithm to solve
                                            the maze: "dfs", "bfs", "greedy",
-                                           "a*", 'a*1.2.1', 'a*1.2.2',
-                                           'a*1.2.3', 'a*1.2.4'or "all"''')
+                                           "a*", "a*1.2.1", "a*1.2.2",
+                                           "a*1.2.3", "a*1.2.4", "a*ghost",
+                                           or "a*ghost_mov", or "all"''')
     args = parser.parse_args()
 
     maze_solver = MazeSolver(args.fname, args.runmode)
