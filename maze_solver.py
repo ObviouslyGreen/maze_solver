@@ -60,8 +60,17 @@ class MazeSolver():
         except:
             pass
 
-    def __manhat_dist(self, row, col):
-        dist = abs(self.dest[0] - row) + abs(self.dest[1] - col)
+    def __manhat_dist(self, row, col, case = 0):
+        if case == 0 or case == 1:
+            dist = abs(self.dest[0] - row) + abs(self.dest[1] - col)
+        elif case == 2:
+            dist = (abs(self.dest[0] - row) + abs(self.dest[1] - col)) * 1.5
+        elif case == 3:
+            dist = (abs(self.dest[0] - row) + abs(self.dest[1] - col))
+            max_dist = len(self.maze[0]) + len(self.maze[0][0])
+            if dist < max_dist:
+                dist *= 1.1
+
         return dist
 
     def __dfs(self, row, col, maze, maze_flags):
@@ -198,14 +207,14 @@ class MazeSolver():
     def __penalized_a_search(self, row, col, maze, case, maze_flags):
         q = queue.PriorityQueue()
 
-        if(case == 1):
+        if(case == 0 or case == 2):
             turn = 1
             forward = 2
-        elif(case == 2):
+        elif(case == 1 or case == 3):
             turn = 2
             forward = 1
 
-        q.put((self.__manhat_dist(row, col), 0, 'E', [], row, col))
+        q.put((self.__manhat_dist(row, col, case), 0, 'E', [], row, col))
         maze_flags[row][col]['type'] = 'marked'
         pathsol = []
 
@@ -238,14 +247,14 @@ class MazeSolver():
 
             if(maze_flags[fr][fc]['type'] == 'unmarked' or maze_flags[fr][fc]['type'] == 'dest'):
                 if(maze_flags[fr][fc]['type'] != 'dest'): maze_flags[fr][fc]['type'] = 'marked'
-                q.put((cost + forward + self.__manhat_dist(fr, fc), cost + forward, direction, path + [(fr, fc)], fr, fc))
+                q.put((cost + forward + self.__manhat_dist(fr, fc, case), cost + forward, direction, path + [(fr, fc)], fr, fc))
 
             if(maze_flags[r][c][right] == False):
-                q.put((cost + turn + self.__manhat_dist(r, c), cost + turn, right, path, r, c))
+                q.put((cost + turn + self.__manhat_dist(r, c, case), cost + turn, right, path, r, c))
                 maze_flags[r][c][right] = True
 
             if(maze_flags[r][c][left] == False):
-                q.put((cost + turn + self.__manhat_dist(r, c), cost + turn, left, path, r, c))
+                q.put((cost + turn + self.__manhat_dist(r, c, case), cost + turn, left, path, r, c))
                 maze_flags[r][c][left] = True
 
         for item in pathsol:
@@ -372,9 +381,13 @@ class MazeSolver():
         elif self.runmode == 'a*':
             self._a_search()
         elif self.runmode == 'a*1.2.1':
-            self._penalized_a_search(1)
+            self._penalized_a_search(0)
         elif self.runmode == 'a*1.2.2':
+            self._penalized_a_search(1)
+        elif self.runmode == 'a*1.2.3':
             self._penalized_a_search(2)
+        elif self.runmode == 'a*1.2.4':
+            self._penalized_a_search(3)
         elif self.runmode == 'all':
             self._dfs()
             self._bfs()
@@ -395,7 +408,8 @@ def main():
     parser.add_argument('fname', help='Input maze')
     parser.add_argument('runmode', help='''Determine which algorithm to solve
                                            the maze: "dfs", "bfs", "greedy",
-                                           "a*", 'a*1.2.1', 'a*1.2.2', or "all"''')
+                                           "a*", 'a*1.2.1', 'a*1.2.2',
+                                           'a*1.2.3', 'a*1.2.4'or "all"''')
     args = parser.parse_args()
 
     maze_solver = MazeSolver(args.fname, args.runmode)
