@@ -1,5 +1,5 @@
 # Maze solver yo
-Maze solver for CS 440 by Shibo Yao, Mike Chen, and Jeff Zhu
+Maze solver by Shibo Yao, Mike Chen, and Jeff Zhu
 
 ## Dependencies
 pip install pillow
